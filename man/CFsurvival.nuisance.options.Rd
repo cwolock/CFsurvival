@@ -9,6 +9,7 @@ CFsurvival.nuisance.options(
   V = ifelse(cross.fit, 10, 1),
   folds = NULL,
   eval.times = NULL,
+  surv.algorithm = "stackG",
   event.SL.library = lapply(c("survSL.km", "survSL.coxph", "survSL.expreg",
     "survSL.weibreg", "survSL.loglogreg", "survSL.gam", "survSL.rfsrc"), function(alg)
     c(alg, "survscreen.glmnet", "survscreen.marg", "All")),
@@ -23,6 +24,9 @@ CFsurvival.nuisance.options(
   survSL.control = list(initWeightAlg = "survSL.rfsrc", verbose = FALSE),
   survSL.cvControl = list(V = 10),
   save.nuis.fits = FALSE,
+  stackG.control = list(bin_size = 0.05, time_basis = "continuous", SL_control =
+    list(SL.library = c("SL.mean", "SL.glm", "SL.gam", "SL.earth", "SL.ranger",
+    "SL.xgboost"), V = 5, method = "method.NNLS", stratifyCV = FALSE)),
   prop.SL.library = lapply(c("SL.mean", "SL.glm", "SL.gam", "SL.earth", "SL.ranger",
     "SL.xgboost"), function(alg) c(alg, "screen.glmnet", "screen.corRank", "All")),
   prop.trunc = 0,
@@ -38,6 +42,8 @@ CFsurvival.nuisance.options(
 \item{folds}{Optional \code{n x 1} vector indicating which fold each observation is in. If \code{NULL}, folds will be randomly assigned in such a way to balance observed events across folds.}
 
 \item{eval.times}{Grid of time values on which to perform the estimation procedure. Defaults to the sorted unique values in \code{time}.}
+
+\item{surv.algorithm}{Algorithm used to estimate conditional survival functions. Options are \code{\link[survML:stackG]{stackG}} from the \code{survML} package and \code{\link[survSuperLearner]{survSuperLearner}} from the \code{survSuperLearner} package. Defaults to \code{\link[survML:stackG]{stackG}}.}
 
 \item{event.SL.library}{The library of candidate learners to be passed on to \code{\link[survSuperLearner]{survSuperLearner}} to estimate the conditional survival of the event. If only a single learner is provided(e.g. \code{survSL.km} for Kaplan-Meier estimator, \code{survSL.coxph} for Cox model, or \code{survSL.rfsrc} for survival random forest), then just this learner will be used, and no super learning will be performed. Defaults to a full library with screening and all algorithms currently implemented in \code{survSuperLearner}. If \code{event.SL.library = NULL}, then \code{event.pred.0} and/or \code{event.pred.1} must be specified.}
 
@@ -58,6 +64,8 @@ CFsurvival.nuisance.options(
 \item{survSL.cvControl}{Optional list of controls to be passed to \code{\link[survSuperLearner]{survSuperLearner}}. See \code{\link[survSuperLearner]{survSuperLearner.CV.control}}.}
 
 \item{save.nuis.fits}{Logical indicating whether to save the fitted nuisance objects.}
+
+\item{stackG.control}{Optional list of control arguments to be passed directly to \code{\link[survML:stackG]{stackG}}. See \code{\link[survML:stackG]{stackG}} documentation for available arguments.}
 
 \item{prop.SL.library}{The library to use for estimation of the treatment propensities using \code{\link[SuperLearner]{SuperLearner}}. If only a single learner is provided(e.g. \code{SL.mean} for marginal mean, \code{SL.glm} for logistic regression, or \code{SL.ranger} for random forest), then just this learner will be used, and no super learning will be performed. If \code{prop.SL.library = NULL}, then \code{prop.pred} must be provided.}
 

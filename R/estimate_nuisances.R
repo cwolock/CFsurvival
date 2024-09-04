@@ -1,4 +1,56 @@
-.estimate.conditional.survival <- function(Y, Delta, A, W, newW, fit.times, fit.treat, event.SL.library, cens.SL.library, survSL.control, survSL.cvControl, cens.trunc, verbose, save.fit) {
+.estimate.conditional.survival.stackG <- function(Y, Delta, A, W, newW, fit.times, fit.treat, stackG.control, cens.trunc, save.fit) {
+  ret <- list(fit.times=fit.times)
+  AW <- cbind(A, W)
+  if(0 %in% fit.treat & 1 %in% fit.treat) {
+    newAW <- rbind(cbind(A=0, newW), cbind(A=1, newW))
+  } else {
+    newAW <- cbind(A=fit.treat, newW)
+  }
+  res <- require(survML)
+  if(!res) stop("Please install the package survML via:\n install.packages('survML')")
+  if(is.null(stackG.control)) stackG.control <- list(bin_size = 0.05, 
+                                                     time_basis = "continuous", 
+                                                     SL_control = list(SL.library = c("SL.mean", "SL.glm", "SL.gam", "SL.earth", "SL.ranger", "SL.xgboost"),
+                                                                       V = 5,
+                                                                       method = "method.NNLS",
+                                                                       stratifyCV = FALSE))
+  
+  fit <- stackG(time = Y, 
+                event = Delta, 
+                X = AW, 
+                newX = newAW, 
+                newtimes = fit.times, 
+                bin_size = stackG.control$bin_size, 
+                time_basis = stackG.control$time_basis, 
+                SL_control = stackG.control$SL_control)
+  if(save.fit) ret$surv.fit <- fit
+  if(0 %in% fit.treat) {
+    ret$event.pred.0 <- fit$S_T_preds[1:nrow(newW),]
+    if(any(ret$event.pred.0 == 0)) ret$event.pred.0[ret$event.pred.0 == 0] <- min(ret$event.pred.0[ret$event.pred.0 > 0])
+    ret$cens.pred.0 <- fit$S_C_preds[1:nrow(newW),]
+    ret$cens.pred.0 <- pmax(ret$cens.pred.0, cens.trunc)
+    if(any(ret$cens.pred.0 == 0)) ret$cens.pred.0[ret$cens.pred.0 == 0] <- min(ret$cens.pred.0[ret$cens.pred.0 > 0])
+    if(1 %in% fit.treat) {
+      ret$event.pred.1 <- fit$S_T_preds[-(1:nrow(newW)),]
+      if(any(ret$event.pred.1 == 0)) ret$event.pred.1[ret$event.pred.1 == 0] <- min(ret$event.pred.1[ret$event.pred.1 > 0])
+      
+      ret$cens.pred.1 <- fit$S_C_preds[-(1:nrow(newW)),]
+      ret$cens.pred.1 <- pmax(ret$cens.pred.1, cens.trunc)
+      if(any(ret$cens.pred.1 == 0)) ret$cens.pred.1[ret$cens.pred.1 == 0] <- min(ret$cens.pred.1[ret$cens.pred.1 > 0])
+    }
+  } else {
+    ret$event.pred.1 <- fit$S_T_preds
+    if(any(ret$event.pred.1 == 0)) ret$event.pred.1[ret$event.pred.1 == 0] <- min(ret$event.pred.1[ret$event.pred.1 > 0])
+    ret$cens.pred.1 <- fit$S_C_preds
+    ret$cens.pred.1 <- pmax(ret$cens.pred.1, cens.trunc)
+    if(any(ret$cens.pred.1 == 0)) ret$cens.pred.1[ret$cens.pred.1 == 0] <- min(ret$cens.pred.1[ret$cens.pred.1 > 0])
+  }
+  ret$event.coef <- NULL
+  ret$cens.coef <- NULL
+  return(ret)
+}
+
+.estimate.conditional.survival.survSL <- function(Y, Delta, A, W, newW, fit.times, fit.treat, event.SL.library, cens.SL.library, survSL.control, survSL.cvControl, cens.trunc, verbose, save.fit) {
     ret <- list(fit.times=fit.times)
     AW <- cbind(A, W)
     if(0 %in% fit.treat & 1 %in% fit.treat) {
