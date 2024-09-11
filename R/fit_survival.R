@@ -275,7 +275,7 @@ CFsurvival <- function(time, event, treat, confounders, fit.times=sort(unique(ti
                                                             stackG.control = nuis$stackG.control,
                                                             cens.trunc=nuis$cens.trunc,
                                                             save.fit = nuis$save.nuis.fits)
-        } else if (nuis$surv.algorithm == "survSL"){
+        } else if (nuis$surv.algorithm == "survSuperLearner"){
           surv.fit <- .estimate.conditional.survival.survSL(Y=time[train],
                                                             Delta=event[train],
                                                             A=treat[train],
@@ -313,7 +313,7 @@ CFsurvival <- function(time, event, treat, confounders, fit.times=sort(unique(ti
                                                           stackG.control = nuis$stackG.control,
                                                           cens.trunc=nuis$cens.trunc,
                                                           save.fit = nuis$save.nuis.fits)
-      } else if (nuis$surv.algorithm == "survSL"){
+      } else if (nuis$surv.algorithm == "survSuperLearner"){
         surv.fit <- .estimate.conditional.survival.survSL(Y=time,
                                                           Delta=event,
                                                           A=treat,
